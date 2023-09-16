@@ -3,7 +3,7 @@ from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.conditions import Key, Attr, Not
 
 TABLE_NAME_STR = 'FoodProducts'
-INDEX_NAME_STR = 'special_GSI"'
+INDEX_NAME_STR = 'special_GSI'
 DDB = boto3.resource('dynamodb', region_name='us-east-1')
     
 def lambda_handler(event, context):
