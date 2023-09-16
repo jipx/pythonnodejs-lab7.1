@@ -1,24 +1,43 @@
-const AWS = require('aws-sdk');
-const lambda = new AWS.Lambda({ region: 'us-east-1' });
+const { Lambda, S3 } = require('aws-sdk');
+const childProcess = require('child_process');
 
+const lambda = new Lambda({ region: 'us-east-1' });
 const ROLE = 'arn:aws:iam::323811569584:role/LambdaAccessToDynamoDB';
-const BUCKET = 'YOUR_BUCKET_NAME'; // Replace with your S3 bucket name
 
-const params = {
-    FunctionName: 'create_report',
-    Runtime: 'nodejs14.x',
-    Role: ROLE,
-    Handler: 'index.handler',
-    Code: {
-        S3Bucket: BUCKET,
-        S3Key: 'create_report_code.zip',
-    },
-};
+async function createLambdaFunction() {
+    try {
+        const s3 = new S3();
+        const buckets = await s3.listBuckets().promise();
+        
+        let BUCKET = '';
 
-lambda.createFunction(params, (err, data) => {
-    if (err) {
-        console.error('Error creating Lambda function:', err);
-    } else {
-        console.log('Lambda function created:', data);
+        for (const bucket of buckets.Buckets) {
+            if (bucket.Name.includes('s3bucket')) {
+                BUCKET = bucket.Name;
+                break;
+            }
+        }
+
+        if (!BUCKET) {
+            throw new Error('S3 bucket not found.');
+        }
+
+        const params = {
+            FunctionName: 'create_report',
+            Runtime: 'nodejs14.x',
+            Role: ROLE,
+            Handler: 'create_report_code.lambda_handler',
+            Code: {
+                S3Bucket: BUCKET,
+                S3Key: 'create_report_code.zip',
+            },
+        };
+
+        const response = await lambda.createFunction(params).promise();
+        console.log('Lambda function created:', response.FunctionArn);
+    } catch (error) {
+        console.error('Error creating Lambda function:', error.message);
     }
-});
+}
+
+createLambdaFunction();
